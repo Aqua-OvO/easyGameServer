@@ -8,10 +8,38 @@
 //WASStartup是引用的动态库，所以需要加上上面一行，引入动态库，ws2为WinSock2,32为32位
 //但是这种写法只适用于windows平台下，所以应该在属性->链接器->输入->附加依赖项中添加这个库ws2_32.lib
 
-struct DataPackage
+enum CMD
 {
-	int age;
-	char name[32];
+	CMD_LOGIN,
+	CMD_LOGOUT,
+	CMD_ERROR
+};
+
+struct DataHeader
+{
+	short dataLength;	//数据长度
+	short cmd;			//命令
+};
+// DataPackage
+struct Login
+{
+	char userName[32];
+	char passWord[32];
+};
+
+struct LoginResult
+{
+	int result;
+};
+
+struct Logout
+{
+	char userName[32];
+};
+
+struct LogoutResult
+{
+	int result;
 };
 
 int main()
@@ -59,29 +87,46 @@ int main()
 	}
 	printf("新客户端加入：socket = %d,IP = %s \n", (int)_cSock, inet_ntoa(clientAddr.sin_addr));
 
-	char _recvBuf[128] = {};
 	while (true)
 	{
+		DataHeader header = {};
 		// 5 接收客户端数据
-		int nLen = recv(_cSock, _recvBuf, 128, 0);
+		int nLen = recv(_cSock, (char *)&header, sizeof(header), 0);
 		if (nLen <= 0)
 		{
 			printf("客户端已退出，任务结束。\n");
 			break;
 		}
-		printf("收到命令：%s \n", _recvBuf);
-		// 6 处理请求
-		if (0 == strcmp(_recvBuf, "getInfo"))
+		printf("收到命令：%d 数据长度：%d \n", header.cmd, header.dataLength);
+		switch (header.cmd)
 		{
-			DataPackage dp = { 80, "张国荣" };
-			// 7 send 向客户端发送数据
-			send(_cSock, (const char*)&dp, sizeof(DataPackage) + 1, 0);
+			case CMD_LOGIN:
+			{
+				Login login = {};
+				recv(_cSock, (char*)&login, sizeof(Login), 0);
+				//忽略判断用户密码是否正确的过程
+				LoginResult ret = { 1 };
+				send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+				send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
+			}
+			break;
+			case CMD_LOGOUT:
+			{
+				Logout logout = {};
+				recv(_cSock, (char*)&logout, sizeof(Logout), 0);
+				//忽略判断用户密码是否正确的过程
+				LogoutResult ret = { 1 };
+				send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+				send(_cSock, (char*)&ret, sizeof(LogoutResult), 0);
+			}
+			break;
+			default:
+				header.cmd = CMD_ERROR;
+				header.dataLength = 0;
+				send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+			break;
 		}
-		else {
-			char msgBuf[] = "???.";
-			// 7 send 向客户端发送数据
-			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
-		}
+		
 	}
 	// 8 关闭套接字closesocket
 	closesocket(_sock);

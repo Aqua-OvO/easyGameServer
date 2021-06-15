@@ -7,10 +7,39 @@
 //WASStartup是引用的动态库，所以需要加上上面一行，引入动态库，ws2为WinSock2,32为32位
 //但是这种写法只适用于windows平台下，所以应该在属性->链接器->输入->附加依赖项中添加这个库ws2_32.lib
 
-struct DataPackage
+//
+enum CMD
 {
-	int age;
-	char name[32];
+	CMD_LOGIN,
+	CMD_LOGOUT,
+	CMD_ERROR
+};
+
+struct DataHeader
+{
+	short dataLength;	//数据长度
+	short cmd;			//命令
+};
+// DataPackage
+struct Login
+{
+	char userName[32];
+	char passWord[32];
+};
+
+struct LoginResult
+{
+	int result;
+};
+
+struct Logout
+{
+	char userName[32];
+};
+
+struct LogoutResult
+{
+	int result;
 };
 
 
@@ -59,18 +88,35 @@ int main()
 			printf("收到exit命令\n");
 			break;
 		}
+		else if (0 == strcmp(cmdBuf, "login"))
+		{
+			Login login = {"sq", "sqmima"};
+			DataHeader dh = {sizeof(Login), CMD_LOGIN};
+			// 5 向服务器发送请求命令
+			send(_sock, (const char *)&dh, sizeof(dh), 0);
+			send(_sock, (const char *)&login, sizeof(login), 0);
+			DataHeader retHeader = {};
+			LoginResult loginRet = {};
+			recv(_sock, (char*)&retHeader, sizeof(retHeader), 0);
+			recv(_sock, (char*)&loginRet, sizeof(loginRet), 0);
+			printf("LoginResult: %d\n", loginRet.result);
+		}
+		else if (0 == strcmp(cmdBuf, "logout"))
+		{
+			Logout logout = {"sq"};
+			DataHeader dh = { sizeof(Logout), CMD_LOGOUT };
+
+			send(_sock, (const char *)&dh, sizeof(dh), 0);
+			send(_sock, (const char *)&logout, sizeof(logout), 0);
+			DataHeader retHeader = {};
+			LoginResult logoutRet = {};
+			recv(_sock, (char*)&retHeader, sizeof(retHeader), 0);
+			recv(_sock, (char*)&logoutRet, sizeof(logoutRet), 0);
+			printf("LogoutResult: %d\n", logoutRet.result);
+		}
 		else
 		{
-			// 5 向服务器发送请求命令
-			send(_sock, cmdBuf, strlen(cmdBuf) + 1, 0);
-		}
-
-		// 6 接受服务器信息recv
-		char recvBuf[256] = {};
-		int nLen = recv(_sock, recvBuf, 256, 0);
-		if (nLen > 0) {
-			DataPackage* dp = (DataPackage*)recvBuf;
-			printf("接收到数据：年龄=%d,姓名=%s \n", dp->age, dp->name);
+			printf("不支持的命令，请重新输入。 \n");
 		}
 	}
 
