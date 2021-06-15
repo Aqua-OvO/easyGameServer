@@ -1,0 +1,2 @@
+# EASY GAME PROJECT
+仅用于个人学习用途
