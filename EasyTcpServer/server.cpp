@@ -3,7 +3,7 @@
 #include<windows.h>
 #include<WinSock2.h>
 #include<stdio.h>
-
+#include<vector>
 //#pragma comment(lib, "ws2_32.lib")
 //WASStartup是引用的动态库，所以需要加上上面一行，引入动态库，ws2为WinSock2,32为32位
 //但是这种写法只适用于windows平台下，所以应该在属性->链接器->输入->附加依赖项中添加这个库ws2_32.lib
@@ -66,6 +66,50 @@ struct LogoutResult : public DataHeader
 	int result;
 };
 
+std::vector<SOCKET> g_clients;
+
+int processor(SOCKET _cSock)
+{
+	// 缓冲区
+	char szRecv[4096];
+	// 5 接收客户端数据
+	int nLen = recv(_cSock, szRecv, sizeof(DataHeader), 0);
+	DataHeader* header = (DataHeader*)szRecv;
+	if (nLen <= 0)
+	{
+		printf("客户端已退出，任务结束。\n");
+		return -1;
+	}
+	switch (header->cmd)
+	{
+	case CMD_LOGIN:
+	{
+		recv(_cSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+		Login* login = (Login*)szRecv;
+		printf("收到命令：CMD_LOGIN 数据长度：%d, userName=%s PassWord=%s\n", login->dataLength, login->userName, login->passWord);
+		//忽略判断用户密码是否正确的过程
+		LoginResult ret;
+		send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
+	}
+	break;
+	case CMD_LOGOUT:
+	{
+		recv(_cSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+		Logout* logout = (Logout*)szRecv;
+		printf("收到命令：CMD_LOGOUT 数据长度：%d, userName=%s\n", logout->dataLength, logout->userName);
+		//忽略判断用户密码是否正确的过程
+		LogoutResult ret;
+		send(_cSock, (char*)&ret, sizeof(LogoutResult), 0);
+	}
+	break;
+	default:
+		DataHeader header = { 0,CMD_ERROR };
+		send(_cSock, (char*)&header, sizeof(header), 0);
+		break;
+	}
+	return 0;
+}
+
 int main()
 {
 	WORD ver = MAKEWORD(2, 2);
@@ -99,65 +143,73 @@ int main()
 	{
 		printf("监听网络端口成功...\n");
 	}
-	// 4 accept 等待接受客户端连接
-	sockaddr_in clientAddr = {};
-	int nAddrLen = sizeof(sockaddr_in);
-	SOCKET _cSock = INVALID_SOCKET;
-	//char msgBuf[] = "hello, I'm Server.";
-	_cSock = accept(_sock, (sockaddr*)&clientAddr, &nAddrLen);
-	if (INVALID_SOCKET == _cSock)
-	{
-		printf("错误，接受到无效客户端SOCKET...\n");
-	}
-	printf("新客户端加入：socket = %d,IP = %s \n", (int)_cSock, inet_ntoa(clientAddr.sin_addr));
 
 	while (true)
 	{
-		// 缓冲区
-		char szRecv[1024];
-		// 5 接收客户端数据
-		int nLen = recv(_cSock, szRecv, sizeof(DataHeader), 0);
-		DataHeader* header = (DataHeader*)szRecv;
-		if (nLen <= 0)
+		//伯克利socket
+		fd_set fdRead;
+		fd_set fdWrite;
+		fd_set fdExp;
+
+		FD_ZERO(&fdRead);
+		FD_ZERO(&fdWrite);
+		FD_ZERO(&fdExp);
+
+		FD_SET(_sock, &fdRead);
+		FD_SET(_sock, &fdWrite);
+		FD_SET(_sock, &fdWrite);
+
+		for (int n = (int)g_clients.size() - 1; n >= 0; n--)
 		{
-			printf("客户端已退出，任务结束。\n");
+			FD_SET(g_clients[n], &fdRead);
+		}
+		///ndfs是一个整数值，是指fd_set集合中所有socket的范围，而不是数量，
+		///即所有socket最大值+1，在windows中这个参数无作用 
+		int ret = select(_sock + 1, &fdRead, &fdWrite, &fdExp, NULL);
+		if (ret < 0) // 发生异常
+		{
+			printf("select任务结束\n");
 			break;
 		}
-		switch (header->cmd)
+		int a = 1;
+		if (FD_ISSET(_sock, &fdRead))
 		{
-			case CMD_LOGIN:
+			FD_CLR(_sock, &fdRead);
+			// 4 accept 等待接受客户端连接
+			sockaddr_in clientAddr = {};
+			int nAddrLen = sizeof(sockaddr_in);
+			SOCKET _cSock = INVALID_SOCKET;
+			//char msgBuf[] = "hello, I'm Server.";
+			_cSock = accept(_sock, (sockaddr*)&clientAddr, &nAddrLen);
+			if (INVALID_SOCKET == _cSock)
 			{
-				recv(_cSock, szRecv+sizeof(DataHeader), header->dataLength-sizeof(DataHeader), 0);
-				Login* login = (Login*)szRecv;
-				printf("收到命令：CMD_LOGIN 数据长度：%d, userName=%s PassWord=%s\n", login->dataLength, login->userName, login->passWord);
-				//忽略判断用户密码是否正确的过程
-				LoginResult ret;
-				send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
+				printf("错误，接受到无效客户端SOCKET...\n");
 			}
-			break;
-			case CMD_LOGOUT:
-			{
-				recv(_cSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
-				Logout* logout = (Logout*)szRecv;
-				printf("收到命令：CMD_LOGOUT 数据长度：%d, userName=%s\n", logout->dataLength, logout->userName);
-				//忽略判断用户密码是否正确的过程
-				LogoutResult ret;
-				send(_cSock, (char*)&ret, sizeof(LogoutResult), 0);
-			}
-			break;
-			default:
-				DataHeader header = {0,CMD_ERROR};
-				send(_cSock, (char*)&header, sizeof(header), 0);
-			break;
+			g_clients.push_back(_cSock);
+			printf("新客户端加入：socket = %d,IP = %s \n", (int)_cSock, inet_ntoa(clientAddr.sin_addr));
 		}
-		
+		for (size_t n = 0; n < fdRead.fd_count; n++)
+		{
+			if (-1 == processor(fdRead.fd_array[n]))
+			{
+				auto iter = find(g_clients.begin(), g_clients.end(), fdRead.fd_array[n]);
+				if (iter != g_clients.end())
+				{
+					g_clients.erase(iter);
+				}
+			}
+		}
+	}
+	for (size_t n = g_clients.size() - 1; n >= 0; n--)
+	{
+		closesocket(g_clients[n]);
 	}
 	// 8 关闭套接字closesocket
 	closesocket(_sock);
 	//----------
 	//清除Windows socket环境
 	WSACleanup();// 关闭windows socket网络环境
-	printf("任务结束，推出.");
+	printf("任务结束，推出.\n");
 	getchar();
 	return 0;
 }
