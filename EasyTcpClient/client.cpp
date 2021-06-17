@@ -1,6 +1,16 @@
 #define WIN32_LEAN_AND_MEAN //避免windows和WinSock2重定义
+#ifdef _WIN32
 #include<windows.h>
 #include<WinSock2.h>
+#else
+#include<unistd.h> //unix std
+#include<arpa/inet.h> //对应WinSock2
+#include<string.h>  //字符串操作
+
+#define SOCKET int
+#define INVALID_SOCKET (SOCKET)(-0)
+#define SOCKET_ERROR           (-1)
+#endif
 #include<stdio.h>
 #include<thread>
 
@@ -84,7 +94,7 @@ int processor(SOCKET _cSock)
 	// 缓冲区
 	char szRecv[4096];
 	// 5 接收客户端数据
-	int nLen = recv(_cSock, szRecv, sizeof(DataHeader), 0);
+	int nLen = (int)recv(_cSock, szRecv, sizeof(DataHeader), 0);
 	DataHeader* header = (DataHeader*)szRecv;
 	if (nLen <= 0)
 	{
@@ -158,10 +168,12 @@ void cmdThread(SOCKET sock)
 
 int main()
 {
+#ifdef _WIN32
+	//启动windows socket 2.x环境
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA dat;
-	//启动windows socket 2.x环境
 	WSAStartup(ver, &dat);
+#endif    
 	//---------
 	//-- 用Socket API建立简易TCP客户端
 	// 1 建立一个socket
@@ -176,7 +188,11 @@ int main()
 	}
 	// 2 连接服务器 connect
 	sockaddr_in _sin = {};
+#ifdef _WIN32    
 	_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+#else
+	_sin.sin_addr.s_addr = inet_addr("127.0.0.1");
+#endif    
 	_sin.sin_port = htons(4567);
 	_sin.sin_family = AF_INET;
 
@@ -208,24 +224,27 @@ int main()
 		if (FD_ISSET(_sock, &fdReads))
 		{
 			FD_CLR(_sock, &fdReads);
-			if (-1 == processor(_sock)) 
+			if (-1 == processor(_sock))
 			{
 				printf("select任务异常退出\n");
 				break;
 			}
 		}
 		//线程thread
-		
+
 		printf("空闲时间，处理其他业务中..\n");
-		
+
 	}
 
-
+#ifdef _WIN32
 	// 7 关闭套接字closesocket
 	closesocket(_sock);
 	//----------
 	//清除Windows socket环境
 	WSACleanup();// 关闭windows socket网络环境
+#else
+	close(_sock);
+#endif    
 	printf("任务结束，推出.");
 	getchar();
 	return 0;
