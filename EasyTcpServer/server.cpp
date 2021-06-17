@@ -158,16 +158,16 @@ int main()
 
 	while (true)
 	{
-		//伯克利socket
-		fd_set fdRead;
-		fd_set fdWrite;
+		//伯克利套接字 BSD socket
+		fd_set fdRead;	//socket集合
+		fd_set fdWrite;	
 		fd_set fdExp;
 
 		FD_ZERO(&fdRead);
 		FD_ZERO(&fdWrite);
 		FD_ZERO(&fdExp);
 
-		FD_SET(_sock, &fdRead);
+		FD_SET(_sock, &fdRead);	//将socket加入到socket集合
 		FD_SET(_sock, &fdWrite);
 		FD_SET(_sock, &fdWrite);
 
@@ -198,14 +198,17 @@ int main()
 			{
 				printf("错误，接受到无效客户端SOCKET...\n");
 			}
-			for (int n = (int)g_clients.size() - 1; n >= 0; n--)
+			else
 			{
-				NewUserJoin userJoin;
-				userJoin.sock = _cSock;
-				send(g_clients[n], (const char*)&userJoin, sizeof(NewUserJoin), 0);
+				for (int n = (int)g_clients.size() - 1; n >= 0; n--)
+				{
+					NewUserJoin userJoin;
+					userJoin.sock = _cSock;
+					send(g_clients[n], (const char*)&userJoin, sizeof(NewUserJoin), 0);
+				}
+				g_clients.push_back(_cSock);
+				printf("新客户端加入：socket = %d,IP = %s \n", (int)_cSock, inet_ntoa(clientAddr.sin_addr));
 			}
-			g_clients.push_back(_cSock);
-			printf("新客户端加入：socket = %d,IP = %s \n", (int)_cSock, inet_ntoa(clientAddr.sin_addr));
 		}
 		for (size_t n = 0; n < fdRead.fd_count; n++)
 		{

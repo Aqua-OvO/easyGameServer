@@ -2,6 +2,7 @@
 #include<windows.h>
 #include<WinSock2.h>
 #include<stdio.h>
+#include<thread>
 
 //#pragma comment(lib, "ws2_32.lib")
 //WASStartup是引用的动态库，所以需要加上上面一行，引入动态库，ws2为WinSock2,32为32位
@@ -121,6 +122,40 @@ int processor(SOCKET _cSock)
 	return 0;
 }
 
+bool g_bRun = true;
+
+void cmdThread(SOCKET sock)
+{
+	while (true)
+	{
+		char cmdBuf[256] = {};
+		scanf("%s", cmdBuf);
+		if (0 == strcmp(cmdBuf, "exit"))
+		{
+			printf("退出cmdThread线程\n");
+			break;
+		}
+		else if (0 == strcmp(cmdBuf, "login"))
+		{
+			Login login;
+			strcpy(login.userName, "sq");
+			strcpy(login.passWord, "mima1234");
+			send(sock, (const char *)&login, sizeof(login), 0);
+		}
+		else if (0 == strcmp(cmdBuf, "logout"))
+		{
+			Logout logout;
+			strcpy(logout.userName, "sq");
+			send(sock, (const char *)&logout, sizeof(logout), 0);
+		}
+		else
+		{
+			printf("不支持的命令。\n");
+		}
+	}
+	g_bRun = false;
+}
+
 int main()
 {
 	WORD ver = MAKEWORD(2, 2);
@@ -154,8 +189,11 @@ int main()
 	{
 		printf("连接Socket成功...\n");
 	}
-	
-	while (true)
+	//启动线程
+	std::thread t1(cmdThread, _sock);
+	t1.detach();
+
+	while (g_bRun)
 	{
 		fd_set fdReads;
 		FD_ZERO(&fdReads);
@@ -176,12 +214,10 @@ int main()
 				break;
 			}
 		}
+		//线程thread
+		
 		printf("空闲时间，处理其他业务中..\n");
-		Login login;
-		strcpy(login.userName, "sq");
-		strcpy(login.passWord, "mima1234");
-		send(_sock, (const char *)&login, sizeof(login), 0);
-		Sleep(1000);
+		
 	}
 
 
