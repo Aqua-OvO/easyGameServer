@@ -1,5 +1,5 @@
-#define WIN32_LEAN_AND_MEAN //避免windows和WinSock2重定义
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN //避免windows和WinSock2重定义
 #include<windows.h>
 #include<WinSock2.h>
 #else
