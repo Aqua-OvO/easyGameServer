@@ -241,7 +241,7 @@ int main()
 			{
 				if (-1 == processor(g_clients[n]))
 				{
-					auto iter = find(g_clients.begin(), g_clients.end(), g_clients[n]);
+					auto iter = g_clients.begin() + n;
 					if (iter != g_clients.end())
 					{
 						g_clients.erase(iter);
