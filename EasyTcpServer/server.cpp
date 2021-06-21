@@ -15,7 +15,7 @@ int main()
 	while (server.isRun())
 	{
 		server.OnRun();
-		printf("空闲时间，处理其他业务中..\n");
+		//printf("空闲时间，处理其他业务中..\n");
 	}
 	server.Close();
 	printf("任务结束，推出.\n");

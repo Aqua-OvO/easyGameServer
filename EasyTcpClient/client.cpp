@@ -47,11 +47,15 @@ int main()
 	//启动线程
 	std::thread t1(cmdThread, &client);
 	t1.detach();
+	Login login;
+	strcpy(login.userName, "sq");
+	strcpy(login.passWord, "sq1234");
 	while (client.isRun())
 	{
 		client.OnRun();
+		client.SendData(&login);
 		//线程thread
-		printf("空闲时间，处理其他业务中..\n");
+		//printf("空闲时间，处理其他业务中..\n");
 
 	}
 	client.Close();

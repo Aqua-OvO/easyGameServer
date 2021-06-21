@@ -105,7 +105,7 @@ public:
 			fd_set fdReads;
 			FD_ZERO(&fdReads);
 			FD_SET(_sock, &fdReads);
-			timeval t = { 0, 1000000 };
+			timeval t = { 0, 0 };
 			int ret = select((int)_sock + 1, &fdReads, NULL, NULL, &t);
 			if (ret < 0)
 			{
@@ -134,11 +134,15 @@ public:
 	}
 
 	// 接收数据,处理粘包、拆分包
+	char szRecv[409600];
 	int RecvData()
 	{
 		// 缓冲区
-		char szRecv[4096];
+		
 		// 5 接收客户端数据
+		int nLen = (int)recv(_sock, szRecv, 409600, 0);
+		printf("nLen=%d\n", nLen);
+		/*
 		int nLen = (int)recv(_sock, szRecv, sizeof(DataHeader), 0);
 		DataHeader* header = (DataHeader*)szRecv;
 		if (nLen <= 0)
@@ -149,6 +153,8 @@ public:
 		recv(_sock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
 
 		OnNetMsg(header);
+		*/
+		
 		return 0;
 	}
 
