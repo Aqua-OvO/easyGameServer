@@ -129,6 +129,7 @@ public:
 		}
 		return _cSock;
 	}
+	//int _nCount = 0;
 	// 处理网络消息
 	bool OnRun()
 	{
@@ -158,8 +159,9 @@ public:
 			///ndfs是一个整数值，是指fd_set集合中所有socket的范围，而不是数量，
 			///即所有socket最大值+1，在windows中这个参数无作用 
 			///第5个参数传NULL则变成阻塞
-			timeval t = { 0, 0 };
+			timeval t = { 0, 100000 };
 			int ret = select((int)maxSock + 1, &fdRead, &fdWrite, &fdExp, &t);
+			//printf("select ret=%d count=%d\n", ret, _nCount++);
 			if (ret < 0) // 发生异常
 			{
 				printf("select任务结束\n");
@@ -196,7 +198,7 @@ public:
 	{
 		// 缓冲区
 		int nLen = (int)recv(_cSock, szRecv, 409600, 0);
-		printf("nLen=%d\n", nLen);
+		//printf("nLen=%d\n", nLen);
 		LoginResult ret;
 		SendData(_cSock, &ret);
 		/*
