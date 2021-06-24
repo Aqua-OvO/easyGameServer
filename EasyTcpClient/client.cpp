@@ -6,7 +6,9 @@
 //WASStartup是引用的动态库，所以需要加上上面一行，引入动态库，ws2为WinSock2,32为32位
 //但是这种写法只适用于windows平台下，所以应该在属性->链接器->输入->附加依赖项中添加这个库ws2_32.lib
 
-void cmdThread(EasyTcpClient* client)
+bool g_bRun = true;
+
+void cmdThread()
 {
 	while (true)
 	{
@@ -15,21 +17,7 @@ void cmdThread(EasyTcpClient* client)
 		if (0 == strcmp(cmdBuf, "exit"))
 		{
 			printf("退出cmdThread线程\n");
-			client->Close();
 			break;
-		}
-		else if (0 == strcmp(cmdBuf, "login"))
-		{
-			Login login;
-			strcpy(login.userName, "sq");
-			strcpy(login.passWord, "mima1234");
-			client->SendData(&login);
-		}
-		else if (0 == strcmp(cmdBuf, "logout"))
-		{
-			Logout logout;
-			strcpy(logout.userName, "sq");
-			client->SendData(&logout);
 		}
 		else
 		{
@@ -40,26 +28,38 @@ void cmdThread(EasyTcpClient* client)
 
 int main()
 {
-	EasyTcpClient client;
-	client.InitSocket();
-	client.Connect("127.0.0.1", 4567);
+	const int cCount = 10;
+	EasyTcpClient* client[cCount];
+	for (int n = 0; n < cCount; n++)
+	{
+		client[n] = new EasyTcpClient();
+		client[n]->InitSocket();
+		client[n]->Connect("127.0.0.1", 4567);
+	}
 
 	//启动线程
-	std::thread t1(cmdThread, &client);
+	std::thread t1(cmdThread);
 	t1.detach();
 	Login login;
 	strcpy(login.userName, "sq");
 	strcpy(login.passWord, "sq1234");
-	while (client.isRun())
+	while (g_bRun)
 	{
-		client.OnRun();
-		client.SendData(&login);
+		for (int n = 0; n < cCount; n++)
+		{
+			client[n]->OnRun();
+			client[n]->SendData(&login);
+		}
+		
 		//线程thread
 		//printf("空闲时间，处理其他业务中..\n");
 
 	}
-	client.Close();
-	printf("任务结束，推出.");
+	for (int n = 0; n < cCount; n++)
+	{
+		client[n]->Close();
+	}
+	printf("任务结束，退出.");
 	getchar();
 	return 0;
 }

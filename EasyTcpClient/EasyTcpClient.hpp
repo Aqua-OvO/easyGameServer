@@ -17,6 +17,10 @@
 #include <stdio.h>
 #include "MessageHeader.hpp"
 
+#ifndef RECV_BUFF_SIZE
+#define RECV_BUFF_SIZE 10240
+#endif
+
 class EasyTcpClient
 {
 public:
@@ -135,12 +139,6 @@ public:
 	}
 
 	// 接收数据,处理粘包、拆分包
-#define RECV_BUFF_SIZE 10240
-	// 接收缓冲区
-	char _szRecv[RECV_BUFF_SIZE] = {};
-	// 第二缓冲区 消息缓冲区
-	char _szMsgBuf[RECV_BUFF_SIZE * 10] = {};
-	int _lastPos = 0;
 	int RecvData()
 	{
 		// 接收客户端数据
@@ -220,6 +218,11 @@ public:
 
 private:
 	SOCKET _sock;
+	// 接收缓冲区
+	char _szRecv[RECV_BUFF_SIZE] = {};
+	// 第二缓冲区 消息缓冲区
+	char _szMsgBuf[RECV_BUFF_SIZE * 10] = {};
+	int _lastPos = 0;
 };
 
 #endif
