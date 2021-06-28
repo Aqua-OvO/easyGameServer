@@ -28,13 +28,20 @@ void cmdThread()
 
 int main()
 {
-	const int cCount = 10;
+	const int cCount = 2000;
 	EasyTcpClient* client[cCount];
 	for (int n = 0; n < cCount; n++)
 	{
+		if (!g_bRun)
+			return 0;
 		client[n] = new EasyTcpClient();
+		if (!g_bRun)
+			return 0;
 		client[n]->InitSocket();
+		if (!g_bRun)
+			return 0;
 		client[n]->Connect("127.0.0.1", 4567);
+		printf("Connect=%d\n", n + 1);
 	}
 
 	//启动线程
@@ -60,6 +67,5 @@ int main()
 		client[n]->Close();
 	}
 	printf("任务结束，退出.");
-	getchar();
 	return 0;
 }

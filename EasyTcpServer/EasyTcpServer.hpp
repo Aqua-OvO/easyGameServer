@@ -2,6 +2,7 @@
 #define EASY_TCP_SERVER_HPP
 
 #ifdef _WIN32
+#define FD_SETSIZE		10024
 #define WIN32_LEAN_AND_MEAN //避免windows和WinSock2重定义
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include<windows.h>
@@ -22,6 +23,7 @@ typedef int socklen_t;
 #endif
 #include<stdio.h>
 #include<vector>
+#include "CELLTimestamp.hpp"
 #include "MessageHeader.hpp"
 
 #ifndef RECV_BUFF_SIZE
@@ -66,6 +68,7 @@ public:
 	{
 		_sock = INVALID_SOCKET;
 		memset(_szRecv, 0, sizeof(_szRecv));
+		_recvCount = 0;
 	}
 
 	virtual ~EasyTcpServer()
@@ -160,7 +163,7 @@ public:
 			userJoin.sock = (int)cSock;
 			SendDataToAll(&userJoin);
 			_clients.push_back(new ClientSocket(cSock));
-			printf("<socket=%d>新客户端加入：socket = %d,IP = %s \n", (int)_sock, (int)cSock, inet_ntoa(clientAddr.sin_addr));
+			//printf("<socket=%d>新客户端<%d>加入：socket = %d,IP = %s \n", (int)_sock, _clients.size(), (int)cSock, inet_ntoa(clientAddr.sin_addr));
 		}
 		return cSock;
 	}
@@ -267,6 +270,14 @@ public:
 	// 响应网络数据
 	virtual void OnNetMsg(SOCKET cSock, DataHeader* header)
 	{
+		_recvCount++;
+		double t1 = _tTime.getElapsedSecond();
+		if (t1 >= 1.0)
+		{
+			printf("time<%1f>,socket<%d>,clients<%d>,_recvCount<%d>\n", t1, (int)_sock, _clients.size(), _recvCount);
+			_recvCount = 0;
+			_tTime.update();
+		}
 		switch (header->cmd)
 		{
 		case CMD_LOGIN:
@@ -349,6 +360,8 @@ private:
 	SOCKET _sock;
 	std::vector<ClientSocket*> _clients;
 	char _szRecv[RECV_BUFF_SIZE];
+	CELLTimestamp _tTime;
+	int _recvCount;
 };
 
 #endif

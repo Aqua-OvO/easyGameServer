@@ -1,6 +1,7 @@
 #ifndef EASY_TCP_CLIENT_HPP
 #define EASY_TCP_CLIENT_HPP
 #ifdef _WIN32
+#define FD_SETSIZE		10024
 #define WIN32_LEAN_AND_MEAN //避免windows和WinSock2重定义
 #include<windows.h>
 #include<WinSock2.h>
@@ -54,7 +55,7 @@ public:
 		}
 		else
 		{
-			printf("<socket=%d>建立成功...\n", (int)_sock);
+			//printf("<socket=%d>建立成功...\n", (int)_sock);
 		}
 	}
 	// 连接服务器
@@ -80,7 +81,7 @@ public:
 		}
 		else
 		{
-			printf("<socket=%d>连接服务器<%s:%d>成功...\n", (int)_sock, ip, port);
+			//printf("<socket=%d>连接服务器<%s:%d>成功...\n", (int)_sock, ip, port);
 		}
 	}
 	// 关闭socket
