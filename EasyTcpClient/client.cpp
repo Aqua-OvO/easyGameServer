@@ -28,7 +28,7 @@ void cmdThread()
 
 int main()
 {
-	const int cCount = 2000;
+	const int cCount = 100;
 	EasyTcpClient* client[cCount];
 	for (int n = 0; n < cCount; n++)
 	{
