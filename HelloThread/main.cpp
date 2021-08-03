@@ -37,14 +37,14 @@ int main()
 	}
 	//t.detach();
 	//t.join();
-	cout << "tTime=" << tTime.getElapsedTimeInMicroSec() << ",sum=" << sum << endl;
+	cout << "thread\ttTime=" << tTime.getElapsedTimeInMicroSec() << "\tsum=" << sum << endl;
 	tTime.update();
 	sum = 0;
 	for (int i = 0; i < 8000000; i++)
 	{
 		sum++;
 	}
-	cout << "tTime=" << tTime.getElapsedTimeInMicroSec() << ",sum=" << sum << endl;
+	cout << "main\ttTime=" << tTime.getElapsedTimeInMicroSec() << "\tsum=" << sum << endl;
 	cout << "hello, main thread." << endl;
 	return 0;
 }

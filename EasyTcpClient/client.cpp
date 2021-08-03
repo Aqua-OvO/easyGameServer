@@ -51,6 +51,9 @@ void sendThread(int id)
 		printf("Connect=%d\n", n + 1);
 	}
 
+	//std::chrono::milliseconds t(3000);
+	//std::this_thread::sleep_for(t);
+
 	Login login;
 	strcpy(login.userName, "sq");
 	strcpy(login.passWord, "sq1234");
