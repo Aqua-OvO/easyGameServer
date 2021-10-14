@@ -27,7 +27,7 @@ void cmdThread()
 }
 
 //客户端数量
-const int cCount = 1000;
+const int cCount = 2000;
 //发送线程数量
 const int tCount = 4;
 
@@ -46,23 +46,26 @@ void sendThread(int id)
 
 	for (int n = begin; n < end; n++)
 	{
-		client[n]->InitSocket();
 		client[n]->Connect("127.0.0.1", 4567);
-		printf("Connect=%d\n", n + 1);
+		printf("thread<%d>,Connect=%d\n", id, n);
 	}
 
 	//std::chrono::milliseconds t(3000);
 	//std::this_thread::sleep_for(t);
 
-	Login login;
-	strcpy(login.userName, "sq");
-	strcpy(login.passWord, "sq1234");
+	Login login[10];
+	for (int n = 0; n < 10; n++)
+	{
+		strcpy(login[n].userName, "sq");
+		strcpy(login[n].passWord, "sq1234");
+	}
+	const int nLen = sizeof(login);
 	while (g_bRun)
 	{
 		for (int n = begin; n < end; n++)
 		{
+			client[n]->SendData(login, nLen);
 			client[n]->OnRun();
-			client[n]->SendData(&login);
 		}
 
 		//线程thread

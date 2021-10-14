@@ -209,10 +209,10 @@ public:
 	}
 
 	// ·¢ËÍÊý¾Ý
-	int SendData(DataHeader* header)
+	int SendData(DataHeader* header, int nLen)
 	{
 		if (isRun() && header)
-			send(_sock, (char*)header, header->dataLength, 0);
+			send(_sock, (const char*)header, nLen, 0);
 
 		return SOCKET_ERROR;
 	}
