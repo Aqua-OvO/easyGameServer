@@ -224,7 +224,7 @@ public:
 			}
 		}
 
-		return SOCKET_ERROR;
+		return ret;
 	}
 
 private:

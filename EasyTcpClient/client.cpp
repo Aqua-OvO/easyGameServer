@@ -1,6 +1,8 @@
-#include<stdio.h>
-#include<thread>
+#include <stdio.h>
+#include <thread>
+#include <atomic>
 #include "EasyTcpClient.hpp" 
+#include "CELLTimestamp.hpp"
 
 //#pragma comment(lib, "ws2_32.lib")
 //WASStartup是引用的动态库，所以需要加上上面一行，引入动态库，ws2为WinSock2,32为32位
@@ -32,7 +34,8 @@ const int cCount = 10000;
 const int tCount = 4;
 
 EasyTcpClient* client[cCount];
-
+std::atomic_int sendCount = 0;
+std::atomic_int readyCount = 0;
 void sendThread(int id)
 {
 	printf("thread<%d>,start\n", id);
@@ -52,6 +55,12 @@ void sendThread(int id)
 	printf("thread<%d>,Connect<begin=%d, end=%d>\n", id, begin, end);
 	//std::chrono::milliseconds t(3000);
 	//std::this_thread::sleep_for(t);
+	readyCount++;
+	while (readyCount < tCount)
+	{
+		std::chrono::milliseconds t(10);
+		std::this_thread::sleep_for(t);
+	}
 
 	Login login[10];
 	for (int n = 0; n < 10; n++)
@@ -64,8 +73,11 @@ void sendThread(int id)
 	{
 		for (int n = begin; n < end; n++)
 		{
-			client[n]->SendData(login, nLen);
-			client[n]->OnRun();
+			if (SOCKET_ERROR != client[n]->SendData(login, nLen))
+			{
+				sendCount++;
+			}
+			//client[n]->OnRun();
 		}
 
 		//线程thread
@@ -93,10 +105,19 @@ int main()
 		std::thread t1(sendThread, n+1);
 		t1.detach();
 	}
-
+	CELLTimestamp tTime;
 	while (g_bRun)
-		Sleep(100);
-
+	{
+		double t = tTime.getElapsedSecond();
+		if (t >= 1.0)
+		{
+			printf("thread<%d>,clients<%d>,time<%lf>,sendCount<%d>\n", tCount, cCount, t, (int)sendCount);
+			sendCount = 0;
+			tTime.update();
+		}
+		Sleep(1);
+	}
+	
 	printf("任务结束，退出.");
 	return 0;
 }

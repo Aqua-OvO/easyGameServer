@@ -27,6 +27,43 @@ void cmdThread()
 	}
 }
 
+//class MyServer : public EasyTcpServer
+//{
+//public:
+//	virtual void OnNetMsg(ClientSocket* pclient, DataHeader* header)
+//	{
+//		switch (header->cmd)
+//		{
+//		case CMD_LOGIN:
+//		{
+//			Login* login = (Login*)header;
+//			//printf("收到客户端<Socket=%d>请求：CMD_LOGIN 数据长度：%d, userName=%s PassWord=%s\n", (int)cSock, login->dataLength, login->userName, login->passWord);
+//			//忽略判断用户密码是否正确的过程
+//			LoginResult ret;
+//			pclient->SendData(&ret);
+//		}
+//		break;
+//		case CMD_LOGOUT:
+//		{
+//			Logout* logout = (Logout*)header;
+//			//printf("收到客户端<Socket=%d>请求：CMD_LOGOUT 数据长度：%d, userName=%s\n", (int)cSock, logout->dataLength, logout->userName);
+//			//忽略判断用户密码是否正确的过程
+//			LogoutResult ret;
+//			pclient->SendData(&ret);
+//		}
+//		break;
+//		default:
+//			printf("<socket=%d>收到未定义消息，数据长度：%d\n", (int)pclient->sockfd(), header->dataLength);
+//			// DataHeader header;
+//			// SendData(cSock, &header);
+//			break;
+//		}
+//	}
+//
+//private:
+//
+//};
+
 int main()
 {
 	EasyTcpServer server;
