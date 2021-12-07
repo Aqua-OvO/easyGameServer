@@ -21,7 +21,7 @@
 #ifndef RECV_BUFF_SIZE
 #define RECV_BUFF_SIZE 10240
 #endif
-
+#include<iostream>
 class EasyTcpClient
 {
 public:
@@ -122,8 +122,10 @@ public:
 				Close();
 				return false;
 			}
+			printf("===============");
 			if (FD_ISSET(_sock, &fdReads))
 			{
+				printf("||||||||||||||");
 				FD_CLR(_sock, &fdReads);
 				if (-1 == RecvData())
 				{
@@ -139,6 +141,7 @@ public:
 	// 判断运行状态
 	bool isRun()
 	{
+		std::cout << (_sock != INVALID_SOCKET && _isConnect) << std::endl;
 		return _sock != INVALID_SOCKET && _isConnect;
 	}
 
@@ -146,15 +149,19 @@ public:
 	int RecvData()
 	{
 		// 接收客户端数据
-		int nLen = (int)recv(_sock, _szRecv, RECV_BUFF_SIZE, 0);
+		char* szRecv = _szMsgBuf + _lastPos;
+		printf("===============");
+		int nLen = (int)recv(_sock, szRecv, RECV_BUFF_SIZE * 5 - _lastPos, 0);
 		//printf("nLen=%d\n", nLen);
+		printf("||||||||||||||");
 		if (nLen <= 0)
 		{
 			printf("<socket=%d>与服务器断开连接,任务结束。\n", (int)_sock);
 			return -1;
 		}
+		
 		// 将收到的数据拷贝到消息缓冲区
-		memcpy(_szMsgBuf + _lastPos, _szRecv, nLen);
+		//memcpy(_szMsgBuf + _lastPos, _szRecv, nLen);
 		// 消息缓冲区的数据尾部位置后移
 		_lastPos += nLen;
 		// 判断消息缓冲区的长度是否大于消息头DataHeader
@@ -188,19 +195,19 @@ public:
 		{
 		case CMD_LOGIN_RESULT:
 		{
-			LoginResult* loginResult = (LoginResult*)header;
+			//LoginResult* loginResult = (LoginResult*)header;
 			//printf("<socket=%d>收到服务器消息：CMD_LOGIN_RESULT 数据长度：%d\n", (int)_sock, loginResult->dataLength);
 		}
 		break;
 		case CMD_LOGOUT_RESULT:
 		{
-			LogoutResult* logoutResult = (LogoutResult*)header;
+			//LogoutResult* logoutResult = (LogoutResult*)header;
 			//printf("<socket=%d>收到服务器消息：CMD_LOGOUT_RESULT 数据长度：%d\n", (int)_sock, logoutResult->dataLength);
 		}
 		break;
 		case CMD_NEW_USER_JOIN:
 		{
-			NewUserJoin* useJoin = (NewUserJoin*)header;
+			//NewUserJoin* useJoin = (NewUserJoin*)header;
 			//printf("<socket=%d>收到服务器消息：CMD_NEW_USER_JOIN 数据长度：%d\n", (int)_sock, useJoin->dataLength);
 		}
 		break;
@@ -230,7 +237,7 @@ public:
 private:
 	SOCKET _sock;
 	// 接收缓冲区
-	char _szRecv[RECV_BUFF_SIZE] = {};
+	//char _szRecv[RECV_BUFF_SIZE] = {};
 	// 第二缓冲区 消息缓冲区
 	char _szMsgBuf[RECV_BUFF_SIZE * 5] = {};
 	int _lastPos = 0;

@@ -35,7 +35,11 @@ typedef int socklen_t;
 #include "MessageHeader.hpp"
 
 #ifndef RECV_BUFF_SIZE
-#define RECV_BUFF_SIZE 10240
+#define RECV_BUFF_SIZE 10240 * 5
+#endif
+
+#ifndef SEND_BUFF_SIZE
+#define SEND_BUFF_SIZE 100
 #endif
 
 // 客户端对象
@@ -45,7 +49,10 @@ public:
 	ClientSocket(SOCKET sockfd = INVALID_SOCKET)
 	{
 		_sockfd = sockfd;
+		_lastPos = 0;
 		memset(_szMsgBuf, 0, sizeof(_szMsgBuf));
+		_lastSendPos = 0;
+		memset(_szSendBuf, 0, sizeof(_szSendBuf));
 	}
 	SOCKET sockfd()
 	{
@@ -64,16 +71,45 @@ public:
 		_lastPos = pos;
 	}
 	// 发送数据
-	void SendData(DataHeader* header)
+	int SendData(DataHeader* header)
 	{
-		if (header)
-			send(_sockfd, (const char*)header, header->dataLength, 0);
+		int ret = SOCKET_ERROR;
+		//要发送的数据长度
+		int nSendLen = header->dataLength;
+		//要发送的数据
+		const char* pSendData = (const char*)header;
+		while (nSendLen > 0)
+		{	
+			if (_lastSendPos + nSendLen >= SEND_BUFF_SIZE)
+			{
+				int nCopyLen = SEND_BUFF_SIZE - _lastSendPos;
+				memcpy(_szSendBuf + _lastSendPos, pSendData, nCopyLen);
+				pSendData += nCopyLen;
+				nSendLen -= nCopyLen;
+				_lastSendPos = 0;
+				ret = send(_sockfd, _szSendBuf, SEND_BUFF_SIZE, 0);
+				if (SOCKET_ERROR == ret)
+				{
+					return ret;
+				}
+			}
+			else {
+				memcpy(_szSendBuf + _lastSendPos, pSendData, nSendLen);
+				_lastSendPos += nSendLen;
+				nSendLen = 0;
+				ret = 0;
+			}
+		}
+		
+		return ret;
 	}
 private:
 	SOCKET _sockfd;
 	// 第二缓冲区 消息缓冲区
-	char _szMsgBuf[RECV_BUFF_SIZE * 5];
+	char _szMsgBuf[RECV_BUFF_SIZE];
 	int _lastPos = 0;
+	char _szSendBuf[SEND_BUFF_SIZE];
+	int _lastSendPos = 0;
 };
 
 
@@ -284,12 +320,13 @@ public:
 	int RecvData(ClientSocket* pClient)
 	{
 		// 缓冲区
-		int nLen = (int)recv(pClient->sockfd(), _szRecv, RECV_BUFF_SIZE, 0);
+		char* szRecv = pClient->msgBuf() + pClient->getLastPos();
+		int nLen = (int)recv(pClient->sockfd(), szRecv, RECV_BUFF_SIZE-pClient->getLastPos(), 0);
 		if (nLen <= 0)
 			return -1;
 		_pNetEvent->OnNetRecv(pClient);
 		// 将收到的数据拷贝到消息缓冲区
-		memcpy(pClient->msgBuf() + pClient->getLastPos(), _szRecv, nLen);
+
 		// 消息缓冲区的数据尾部位置后移
 		pClient->setLastPos(pClient->getLastPos() + nLen);
 		// 判断消息缓冲区的长度是否大于消息头DataHeader
@@ -356,10 +393,12 @@ public:
 	}
 
 	// 发送指定socket数据
-	void SendData(SOCKET _cSock, DataHeader* header)
+	int SendData(SOCKET _cSock, DataHeader* header)
 	{
-		if (isRun() && header)
-			send(_cSock, (const char*)header, header->dataLength, 0);
+		if (isRun() && header) {
+			return send(_cSock, (const char*)header, header->dataLength, 0);
+		}
+		return SOCKET_ERROR;
 	}
 
 	void addClient(ClientSocket* pClient)
@@ -387,7 +426,7 @@ private:
 	//缓冲队列的锁
 	std::mutex _mutex;
 	std::thread _pthread;
-	char _szRecv[RECV_BUFF_SIZE];
+	//char _szRecv[RECV_BUFF_SIZE];
 	//网络事件对象
 	INetEvent* _pNetEvent;
 	//fd_set
@@ -514,6 +553,8 @@ public:
 		}
 		else
 		{
+			//int on = 1;
+			//setsockopt(_sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&on, sizeof(on))
 			addClientToCellServer(new ClientSocket(cSock));
 			//inet_ntoa(clientAddr.sin_addr); //客户端IP地址
 		}
