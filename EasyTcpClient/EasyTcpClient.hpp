@@ -122,10 +122,8 @@ public:
 				Close();
 				return false;
 			}
-			printf("===============");
 			if (FD_ISSET(_sock, &fdReads))
 			{
-				printf("||||||||||||||");
 				FD_CLR(_sock, &fdReads);
 				if (-1 == RecvData())
 				{
@@ -141,7 +139,6 @@ public:
 	// 判断运行状态
 	bool isRun()
 	{
-		std::cout << (_sock != INVALID_SOCKET && _isConnect) << std::endl;
 		return _sock != INVALID_SOCKET && _isConnect;
 	}
 
@@ -150,10 +147,8 @@ public:
 	{
 		// 接收客户端数据
 		char* szRecv = _szMsgBuf + _lastPos;
-		printf("===============");
 		int nLen = (int)recv(_sock, szRecv, RECV_BUFF_SIZE * 5 - _lastPos, 0);
 		//printf("nLen=%d\n", nLen);
-		printf("||||||||||||||");
 		if (nLen <= 0)
 		{
 			printf("<socket=%d>与服务器断开连接,任务结束。\n", (int)_sock);

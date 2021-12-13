@@ -145,8 +145,13 @@
     <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CELL.hpp" />
+    <ClInclude Include="CELLClient.hpp" />
+    <ClInclude Include="CELLServer.hpp" />
+    <ClInclude Include="CELLTask.hpp" />
     <ClInclude Include="CELLTimestamp.hpp" />
     <ClInclude Include="EasyTcpServer.hpp" />
+    <ClInclude Include="INetEvent.hpp" />
     <ClInclude Include="MessageHeader.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
